@@ -1,0 +1,128 @@
+apiVersion: xl-deploy/v1
+kind: Applications
+spec:
+- name: dan-ecommerce
+  type: core.Directory
+  children:
+
+  - name: EKS-LAMBDA
+    type: core.Directory
+    children:
+    ### create S3 bucket ###
+    - name: dan-ecommerce-lambda-bucket
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: s3-bucket-dan-ecommerce-lambda
+          type: aws.s3.BucketSpec
+          bucketName: dan-ecommerce-lambda
+          region: us-east-2
+    ### upload the artifacts to S3 bucket ###
+    - name: dan-ecommerce-lambda-artifacts
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-lambda-artifacts
+          type: aws.s3.File
+          file: !file ../cloudformation/cfn-secret-provider.zip
+          acl: bucket-owner-full-control
+          scanPlaceholders: false
+# Provision EKS cluster using Cloudformation templates
+  - name: EKS-CLOUDFORMATION
+    type: core.Directory
+    children:
+    - name: dan-ecommerce-cloudformation-eks-user
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-eks-user
+          type: aws.cloudformation.Template
+          file: !file ../cloudformation/eks-user.yaml
+          capabilities:
+          - CAPABILITY_IAM
+          - CAPABILITY_NAMED_IAM
+          inputVariables:
+            ProjectName: dan-ecommerce
+            UserStackName: dan-ecommerce-eks-user
+            S3BucketPrefix: dan-ecommerce-lambda
+    - name: dan-ecommerce-cloudformation-eks-vpc
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-eks-vpc
+          type: aws.cloudformation.Template
+          file: !file ../cloudformation/eks-vpc.yaml
+          capabilities:
+          - CAPABILITY_IAM
+          - CAPABILITY_NAMED_IAM
+          inputVariables:
+            ProjectName: dan-ecommerce
+            VPCStackName: dan-ecommerce-eks-vpc
+            AvailabilityZones: us-east-2a, us-east-2b
+    - name: dan-ecommerce-cloudformation-eks-master
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-eks-master
+          type: aws.cloudformation.Template
+          file: !file ../cloudformation/eks-master.yaml
+          capabilities:
+          - CAPABILITY_IAM
+          - CAPABILITY_NAMED_IAM
+          inputVariables:
+            ProjectName: dan-ecommerce
+            VPCStackName: dan-ecommerce-eks-vpc
+    - name: dan-ecommerce-cloudformation-eks-workers
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-eks-workers
+          type: aws.cloudformation.Template
+          file: !file ../cloudformation/eks-workers.yaml
+          capabilities:
+          - CAPABILITY_IAM
+          - CAPABILITY_NAMED_IAM
+          inputVariables:
+            ProjectName: dan-ecommerce
+            VPCStackName: dan-ecommerce-eks-vpc
+            UserStackName: dan-ecommerce-eks-user
+            ClusterStackName: dan-ecommerce-eks-master
+            ClusterName: dan-ecommerce-master
+            NodeGroupName: dan-ecommerce
+    - name: dan-ecommerce-k8s-configmap
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-ecommerce-aws-auth
+          type: k8s.ResourcesFile
+          file: !file ../kubernetes/aws-auth-cm.yaml
+          delimiters: "## ##"
+
+  - name: K8S
+    type: core.Directory
+
+# Provision K8s namespace
+    children:
+    - name: dan-ecommerce-namespace
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: xl-demo
+          type: k8s.NamespaceSpec
+          namespaceName: 'xl-demo'

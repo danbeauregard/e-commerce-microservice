@@ -1,0 +1,42 @@
+apiVersion: xl-deploy/v1
+kind: Applications
+spec:
+- name: dan-ecommerce
+  type: core.Directory
+  children:
+    - name: K8S
+      type: core.Directory
+      children:
+      - name: dan-ecommerce-store-mysql
+        type: udm.Application
+        children:
+        - name: !value BUILD_ID
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-ecommerce-store-mysql
+            type: k8s.ResourcesFile
+            file: !file ../store/build/kubernetes/store-mysql.yml
+      - name: dan-ecommerce-registry
+        type: udm.Application
+        children:
+        - name: !value BUILD_ID
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-ecommerce-application-config
+            type: k8s.ResourcesFile
+            file: !file ../registry/kubernetes/application-configmap.yml
+          - name: dan-ecommerce-jhipster-registry
+            type: k8s.ResourcesFile
+            file: !file ../registry/kubernetes/jhipster-registry.yml
+      - name: dan-ecommerce-store
+        type: udm.Application
+        children:
+        - name: !value BUILD_ID
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-ecommerce-store-deployment
+            type: k8s.ResourcesFile
+            file: !file ../store/build/kubernetes/store-deployment.yml
+          - name: dan-ecommerce-store-svc
+            type: k8s.ResourcesFile
+            file: !file ../store/build/kubernetes/store-service.yml
