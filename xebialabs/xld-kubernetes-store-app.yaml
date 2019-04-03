@@ -1,0 +1,42 @@
+apiVersion: xl-deploy/v1
+kind: Applications
+spec:
+- name: dan-gcp-test
+  type: core.Directory
+  children:
+    - name: K8S
+      type: core.Directory
+      children:
+      - name: dan-gcp-test-store-mysql
+        type: udm.Application
+        children:
+        - name: 1.0.0
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-gcp-test-store-mysql
+            type: k8s.ResourcesFile
+            file: !file ../kubernetes/store/store-mysql.yml
+      - name: dan-gcp-test-registry
+        type: udm.Application
+        children:
+        - name: 1.0.0
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-gcp-test-application-config
+            type: k8s.ResourcesFile
+            file: !file ../kubernetes/registry/application-configmap.yml
+          - name: dan-gcp-test-jhipster-registry
+            type: k8s.ResourcesFile
+            file: !file ../kubernetes/registry/jhipster-registry.yml
+      - name: dan-gcp-test-store
+        type: udm.Application
+        children:
+        - name: 1.0.0
+          type: udm.DeploymentPackage
+          deployables:
+          - name: dan-gcp-test-store-deployment
+            type: k8s.ResourcesFile
+            file: !file ../kubernetes/store/store-deployment.yml
+          - name: dan-gcp-test-store-svc
+            type: k8s.ResourcesFile
+            file: !file ../kubernetes/store/store-service.yml

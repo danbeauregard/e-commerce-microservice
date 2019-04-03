@@ -1,25 +1,25 @@
-version: '2.3'
+version: '3'
 services:
   xl-deploy:
-    build: xl-deploy
+    image: xebialabs/xl-jetpack-deploy:8.6.1
     container_name: xld
     ports:
-    - 4516:4516
+    - "4516:4516"
     environment:
     - ADMIN_PASSWORD=admin
+    - ACCEPT_EULA=Y
 
   xl-release:
-    build: xl-release
-    container_name: xlr
+    image: xebialabs/xl-jetpack-release:8.6.1
+    container_name: xld
     ports:
-    - 5516:5516
-    depends_on:
-    - xl-deploy
+    - "5516:5516"
     environment:
     - ADMIN_PASSWORD=admin
+    - ACCEPT_EULA=Y
 
   xl-cli:
-    build: xl-cli
+    image: xebialabsunsupported/xl-cli:8.6.1
     container_name: xlc
     depends_on:
     - xl-deploy
@@ -29,7 +29,7 @@ services:
     - ./data/:/data:ro
 
   jenkins:
-    build: jenkins
+    image: xebialabsunsupported/jenkins-blueprint-demo:latest
     container_name: jenkins
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -37,6 +37,7 @@ services:
     environment:
       - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
       - GITHUB_USER=${GITHUB_USER}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
       - DOCKER_USER=${DOCKER_USER}
       - DOCKER_PASS=${DOCKER_PASS}
     ports:

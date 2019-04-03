@@ -1,0 +1,61 @@
+apiVersion: xl-deploy/v1
+kind: Applications
+spec:
+- name: dan-gcp-test
+  type: core.Directory
+  children:
+
+# Provision GKE cluster using Terraform templates
+  - name: GKE-TERRAFORM
+    type: core.Directory
+    children:
+    - name: dan-gcp-test-terraform-gke
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: dan-gcp-test-gke
+          type: terraform.Module
+          file: !file ../terraform
+          inputVariables:
+            project_id: tech-marketing-236315
+            name: dan-gcp-test
+            region: us-east1
+            gke_master_user: admin
+            gke_master_pass: !value K8SMasterPassword
+          boundTemplates:
+          - "../gcp-gke-dan-test"
+          - "../gcp-gke-dan-test-env"
+
+        templates:
+        # creates the required XLD infrastructure entries
+        - name: gcp-gke-dan-test
+          type: template.k8s.Master
+          username: admin
+          password: !value K8SMasterPassword
+          apiServerURL: 'https://{{%outputVariables.endpoint%}}'
+          skipTLS: true
+          instanceName: dan-gcp-test/gcp-gke-dan-test
+        # creates a new environment for Kubernetes deployments
+        - name: gcp-gke-dan-test-env
+          type: template.udm.Environment
+          members:
+          - "../gcp-gke-dan-test"
+          instanceName: dan-gcp-test/gcp-gke-dan-test
+
+
+  - name: K8S
+    type: core.Directory
+
+# Provision K8s namespace
+    children:
+    - name: dan-gcp-test-namespace
+      type: udm.Application
+      children:
+      - name: '1.0.0'
+        type: udm.DeploymentPackage
+        deployables:
+        - name: xl-demo
+          type: k8s.NamespaceSpec
+          namespaceName: 'xl-demo'
